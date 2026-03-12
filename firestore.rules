@@ -1,0 +1,103 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // ===============================================================
+    // Assumed Data Model
+    // ===============================================================
+    // Collection: users
+    // Fields: uid, nome, email, role, moedas, vidas, streak, pontos, medalhas
+    //
+    // Collection: courses
+    // Fields: id, nome
+    //
+    // Collection: courses/{courseId}/levels
+    // Fields: id, courseId, numero, titulo
+    //
+    // Collection: courses/{courseId}/levels/{levelId}/questions
+    // Fields: id, levelId, tipo, enunciado, opcoes, resposta, explicacao, codigo
+    //
+    // Collection: users/{userId}/progress
+    // Fields: levelId, concluido, score
+    //
+    // Collection: ranking
+    // Fields: userId, nome, pontos, streak, medalhas
+    // ===============================================================
+
+    // Helper Functions
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+
+    function isOwner(userId) {
+      return isAuthenticated() && request.auth.uid == userId;
+    }
+
+    function isAdmin() {
+      return isAuthenticated() &&
+        ((request.auth.token.email == "olindo99@gmail.com" && request.auth.token.email_verified == true) ||
+         get(/databases/$(database)/documents/users/$(request.auth.uid)).data.get('role', 'student') == 'admin');
+    }
+
+    function isTeacher() {
+      return isAuthenticated() &&
+        (get(/databases/$(database)/documents/users/$(request.auth.uid)).data.get('role', 'student') in ['teacher', 'admin'] || 
+         (request.auth.token.email == "olindo99@gmail.com" && request.auth.token.email_verified == true));
+    }
+
+    function isValidUser(data) {
+      return data.keys().hasAll(['uid', 'email', 'role']) &&
+             data.uid is string &&
+             data.email is string &&
+             data.role in ['student', 'teacher', 'admin'] &&
+             (!('moedas' in data) || data.moedas is int) &&
+             (!('vidas' in data) || data.vidas is int) &&
+             (!('streak' in data) || data.streak is int) &&
+             (!('pontos' in data) || data.pontos is int) &&
+             (!('medalhas' in data) || data.medalhas is int);
+    }
+
+    // Rules
+    match /users/{userId} {
+      allow read: if isOwner(userId) || isTeacher();
+      allow create: if isAuthenticated() && isValidUser(request.resource.data) && 
+                    (isOwner(userId) && request.resource.data.role == 'student' || isAdmin());
+      allow update: if isAuthenticated() && isValidUser(request.resource.data) && 
+                    (isOwner(userId) && request.resource.data.role == resource.data.role || isAdmin());
+      
+      match /progress/{progressId} {
+        allow read: if isOwner(userId) || isTeacher();
+        allow write: if isOwner(userId) || isAdmin();
+      }
+      
+      match /achievements/{achievementId} {
+        allow read: if isOwner(userId) || isTeacher();
+        allow write: if isAdmin();
+      }
+    }
+
+    match /courses/{courseId} {
+      allow read: if isAuthenticated();
+      allow write: if isTeacher();
+
+      match /levels/{levelId} {
+        allow read: if isAuthenticated();
+        allow write: if isTeacher();
+
+        match /questions/{questionId} {
+          allow read: if isAuthenticated();
+          allow write: if isTeacher();
+        }
+      }
+    }
+    
+    match /ranking/{userId} {
+      allow read: if isAuthenticated();
+      allow create: if isAuthenticated() && isOwner(userId);
+      allow update: if isAuthenticated() && (isOwner(userId) || isAdmin());
+    }
+    
+    match /{path=**}/questions/{questionId} {
+      allow read: if isAuthenticated();
+    }
+  }
+}

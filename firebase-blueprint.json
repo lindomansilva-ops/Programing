@@ -1,0 +1,116 @@
+{
+  "entities": {
+    "User": {
+      "title": "User",
+      "description": "User profile and gamification stats",
+      "type": "object",
+      "properties": {
+        "nome": { "type": "string" },
+        "email": { "type": "string" },
+        "role": { "type": "string", "enum": ["student", "teacher", "admin"] },
+        "moedas": { "type": "integer" },
+        "vidas": { "type": "integer" },
+        "streak": { "type": "integer" },
+        "pontos": { "type": "integer" },
+        "medalhas": { "type": "integer" }
+      },
+      "required": ["nome", "email", "role"]
+    },
+    "Progress": {
+      "title": "Progress",
+      "description": "User progress in a level",
+      "type": "object",
+      "properties": {
+        "concluido": { "type": "boolean" },
+        "score": { "type": "integer" }
+      },
+      "required": ["concluido", "score"]
+    },
+    "Achievement": {
+      "title": "Achievement",
+      "description": "User achievement",
+      "type": "object",
+      "properties": {
+        "tipo": { "type": "string" },
+        "data_conquista": { "type": "string", "format": "date-time" }
+      },
+      "required": ["tipo", "data_conquista"]
+    },
+    "Course": {
+      "title": "Course",
+      "description": "A programming course",
+      "type": "object",
+      "properties": {
+        "nome": { "type": "string" }
+      },
+      "required": ["nome"]
+    },
+    "Level": {
+      "title": "Level",
+      "description": "A level within a course",
+      "type": "object",
+      "properties": {
+        "titulo": { "type": "string" },
+        "numero": { "type": "integer" }
+      },
+      "required": ["titulo", "numero"]
+    },
+    "Question": {
+      "title": "Question",
+      "description": "An exercise or question",
+      "type": "object",
+      "properties": {
+        "tipo": { "type": "string", "enum": ["theory", "practice", "code"] },
+        "enunciado": { "type": "string" },
+        "opcoes": { "type": "array", "items": { "type": "string" } },
+        "resposta": { "type": "string" },
+        "explicacao": { "type": "string" },
+        "codigo": { "type": "string" }
+      },
+      "required": ["tipo", "enunciado", "resposta", "explicacao"]
+    },
+    "Ranking": {
+      "title": "Ranking",
+      "description": "Ranking entry",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string" },
+        "nome": { "type": "string" },
+        "pontos": { "type": "integer" },
+        "streak": { "type": "integer" },
+        "medalhas": { "type": "integer" }
+      },
+      "required": ["userId", "nome", "pontos"]
+    }
+  },
+  "firestore": {
+    "/users/{userId}": {
+      "schema": "User",
+      "description": "User profiles"
+    },
+    "/users/{userId}/progress/{levelId}": {
+      "schema": "Progress",
+      "description": "User level progress"
+    },
+    "/users/{userId}/achievements/{achievementId}": {
+      "schema": "Achievement",
+      "description": "User achievements"
+    },
+    "/courses/{courseId}": {
+      "schema": "Course",
+      "description": "Courses"
+    },
+    "/courses/{courseId}/levels/{levelId}": {
+      "schema": "Level",
+      "description": "Levels within a course"
+    },
+    "/courses/{courseId}/levels/{levelId}/questions/{questionId}": {
+      "schema": "Question",
+      "description": "Questions within a level"
+    },
+    "/ranking/{userId}": {
+      "schema": "Ranking",
+      "description": "Global ranking"
+    }
+  }
+}
